@@ -1,6 +1,7 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+
+import {db} from './firebase';
 
 function TodoItem(props) {
   const {todo, toggleTodo, deleteTodo} = props;
@@ -16,33 +17,47 @@ function TodoItem(props) {
 function App() {
   const [todoList, setTodoList] = React.useState([]);
 
+  React.useEffect(() => {
+    db.collection('Todo').get().then(todos => {
+      todos = todos.docs.map(todo => todo.data());
+      setTodoList(todos);
+    });
+  }, []);
+
   const addTodo = () => {
     const todoInput = document.getElementById('todo-input')
     const todo = {
-      id: Date.now(),
+      id: Date.now().toString(),
       text: todoInput.value,
       completed: false
     };
 
     const newTodoList = [...todoList, todo];
 
+    db.collection('Todo').doc(todo.id).set(todo);
+
     setTodoList(newTodoList);
     todoInput.value = "";
   }
 
   const toggleTodo = (id) => {
+    let updatedTodo;
     const newTodoList = todoList.map(todo => {
       if(todo.id === id) {
         todo.completed = !todo.completed;
+        updatedTodo = todo;
       }
       return todo;
     });
+
+    db.collection('Todo').doc(id).set(updatedTodo);
 
     setTodoList(newTodoList);
   }
 
   const deleteTodo = (id) => {
     const newTodoList = todoList.filter(todo => todo.id !== id)
+    db.collection('Todo').doc(id).delete();
     setTodoList(newTodoList);
   }
 
